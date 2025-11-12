@@ -1,0 +1,40 @@
+<!--
+  GPS Waypoint Navigation Behavior Tree (No deprecated RecoveryNode)
+  - ComputePathThroughPoses + FollowPath + 기본 Recovery 동작
+-->
+<root main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+
+    <ReactiveFallback name="NavigateWithRecovery">
+
+      <!-- 1. 정상 네비게이션 시퀀스 -->
+      <PipelineSequence name="NavigateSequence">
+
+        <!-- 주기적으로 경로 갱신 -->
+        <RateController hz="0.333" name="ReplanEvery3s">
+          <ReactiveSequence name="ComputePathSeq">
+            <RemovePassedGoals input_goals="{goals}" output_goals="{goals}" radius="0.7"/>
+            <ComputePathThroughPoses goals="{goals}" path="{path}" planner_id="GridBased"/>
+          </ReactiveSequence>
+        </RateController>
+
+        <!-- 경로 따라가기 -->
+        <FollowPath path="{path}" controller_id="FollowPath"/>
+
+      </PipelineSequence>
+
+      <!-- 2. 실패 시 리커버리 액션 -->
+      <RoundRobin name="RecoveryActions">
+        <Sequence name="ClearCostmaps">
+          <ClearEntireCostmap name="ClearLocalCostmap" service_name="local_costmap/clear_entirely_local_costmap"/>
+          <ClearEntireCostmap name="ClearGlobalCostmap" service_name="global_costmap/clear_entirely_global_costmap"/>
+        </Sequence>
+        <Spin spin_dist="1.57"/>
+        <Wait wait_duration="5"/>
+        <BackUp backup_dist="0.30" backup_speed="0.05"/>
+      </RoundRobin>
+
+    </ReactiveFallback>
+
+  </BehaviorTree>
+</root>

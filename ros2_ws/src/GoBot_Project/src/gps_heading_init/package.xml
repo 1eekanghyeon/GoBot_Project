@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>gps_heading_init</name>
+  <version>0.0.0</version>
+  <description>GPS-based heading init and re-calibration for Unitree Go2</description>
+
+  <maintainer email="lee@todo.todo">lee</maintainer>
+  <license>Apache-2.0</license>
+
+  <!-- 우리가 실제로 파이썬 노드에서 쓰는 ROS 패키지들 -->
+  <depend>rclpy</depend>
+  <depend>std_srvs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>go2_interfaces</depend>
+  <!-- 런치파일에서 필요 -->
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+
+  <!-- 여기서 아주 중요!! 이 패키지는 ament_python 이라고 선언 -->
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
