@@ -69,7 +69,10 @@ class IMUBridge(Node):
             pass
         except Exception:
             pass
-        header.stamp = stamp if stamp is not None else self.get_clock().now().to_msg()
+        try:
+            header.stamp = msg.header.stamp   # Go2IMU에 header가 있으면 그대로
+        except Exception:
+            header.stamp = self.get_clock().now().to_msg()        
         header.frame_id = self.frame_id
         imu_msg.header = header
 

@@ -31,6 +31,7 @@ setup(
             'gps_heading_init_node = gps_heading_init.gps_heading_init_node:main',
             'imu_bridge = gps_heading_init.imu_bridge:main',
             'gps_path_planner = gps_heading_init.gps_path_planner:main',
+            'gps_rtk_pid_nav = gps_heading_init.gps_rtk_pid_nav:main',
         ],
     },
 )

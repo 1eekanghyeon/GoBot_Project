@@ -21,7 +21,7 @@ class TcpNmeaToNavSatFix(Node):
         super().__init__('tcp_nmea_to_navsatfix')
 
         # ── 파라미터 ───────────────────────────────────────────────────────────────
-        self.declare_parameter('server_host', '192.168.0.100')   # TCP 서버 IP (Jetson 등)
+        self.declare_parameter('server_host', '192.168.0.21')   # TCP 서버 IP (Jetson 등)
         self.declare_parameter('server_port', 5000)              # TCP 서버 포트
         self.declare_parameter('frame_id', 'gps_link')           # NavSatFix header.frame_id
         self.declare_parameter('topic_name', '/fix')             # 퍼블리시 토픽
@@ -130,7 +130,7 @@ class TcpNmeaToNavSatFix(Node):
                 m.status.status = NavSatStatus.STATUS_NO_FIX
                 m.status.service = 0
         else:
-            if q in (4, 5):
+            if q in (1, 2, 4, 5):
                 m.status.status = NavSatStatus.STATUS_GBAS_FIX
                 m.status.service = (
                     NavSatStatus.SERVICE_GPS
@@ -138,7 +138,8 @@ class TcpNmeaToNavSatFix(Node):
                     | NavSatStatus.SERVICE_GALILEO
                 )
             else:
-                return
+                m.status.status = NavSatStatus.STATUS_NO_FIX
+                m.status.service = 0
 
         # ── HDOP ───────────────────────────────────────────────────────────────
         try:

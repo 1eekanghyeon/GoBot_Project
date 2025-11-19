@@ -33,7 +33,9 @@ class ROS2Publisher(IRobotDataPublisher):
         self.broadcaster = broadcaster
         self.bridge = CvBridge()
         self.camera_info = load_camera_info()
-
+        
+        self.node.get_logger().info(f"[ROS2Publisher] loaded from: {__file__}")
+        self.last_velocity = {}
     def publish_odometry(self, robot_data: RobotData) -> None:
         """Publish odometry data"""
         if not robot_data.odometry_data:
@@ -98,6 +100,39 @@ class ROS2Publisher(IRobotDataPublisher):
         odom_msg.pose.pose.orientation.y = float(orientation['y'])
         odom_msg.pose.pose.orientation.z = float(orientation['z'])
         odom_msg.pose.pose.orientation.w = float(orientation['w'])
+        # --- 여기부터 새 로직 ---
+        v = None
+
+        # 1) 혹시 robot_state가 같이 딸려오는 경우면 그대로 사용
+        if robot_data.robot_state and getattr(robot_data.robot_state, "velocity", None):
+            v = list(robot_data.robot_state.velocity)
+            self.node.get_logger().info(
+                f"[ROS2Publisher] odom.twist: robot_state.velocity 직접 사용 v={v}"
+            )
+
+        # 2) 아니면 캐시된 velocity 사용
+        elif robot_idx in self.last_velocity:
+            v = list(self.last_velocity[robot_idx])
+            self.node.get_logger().debug(
+                f"[ROS2Publisher] odom.twist: 캐시 velocity[{robot_idx}] 사용 v={v}"
+            )
+
+        # 3) 둘 다 없으면 포기
+        else:
+            self.node.get_logger().warn(
+                f"[ROS2Publisher] odom.twist 세팅 불가: robot_state도 없고 캐시도 없음 (idx={robot_idx})"
+            )
+
+        if v is not None and len(v) >= 2:
+            odom_msg.twist.twist.linear.x = float(v[0])
+            if len(v) >= 3:
+                odom_msg.twist.twist.linear.z = float(v[2])
+
+            cov = [0.0] * 36
+            cov[0]  = 0.01   # vx variance
+            cov[14] = 0.04   # vz variance
+            odom_msg.twist.covariance = cov
+        # --- 새 로직 끝 ---
 
         self.publishers['odometry'][robot_idx].publish(odom_msg)
 
@@ -163,7 +198,12 @@ class ROS2Publisher(IRobotDataPublisher):
             go2_state.foot_speed_body = list(map(float, state.foot_speed_body))
             
             self.publishers['robot_state'][robot_idx].publish(go2_state)
-
+            if state.velocity:
+                # list(...)로 한 번 복사해 두는 게 안전
+                self.last_velocity[robot_idx] = list(state.velocity)
+                self.node.get_logger().debug(
+                    f"[ROS2Publisher] 캐시 velocity[{robot_idx}] = {self.last_velocity[robot_idx]}"
+                ) 
             # Publish IMU
             if robot_data.imu_data:
                 imu = IMU()
